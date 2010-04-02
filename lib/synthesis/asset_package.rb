@@ -146,43 +146,31 @@ module Synthesis
       end
     
       def compressed_file
-        case @asset_type
-          when "javascripts" then compress_js(merged_file)
-          when "stylesheets" then compress_css(merged_file)
-        end
+        compress_file( merged_file, get_extension )
       end
 
-      def compress_js(source)
-        jsmin_path = "#{Rails.root}/vendor/plugins/asset_packager/lib"
-        tmp_path = "#{Rails.root}/tmp/#{@target}_packaged"
+      def compress_file( source, kind, verbose=true )
+        jsmin_path = "#{RAILS_ROOT}/vendor/plugins/asset_packager/lib"
+        tmp_path   = "#{RAILS_ROOT}/tmp/#{@target}_packaged"
       
         # write out to a temp file
-        File.open("#{tmp_path}_uncompressed.js", "w") {|f| f.write(source) }
-      
-        # compress file with JSMin library
-        `ruby #{jsmin_path}/jsmin.rb <#{tmp_path}_uncompressed.js >#{tmp_path}_compressed.js \n`
+        File.open("#{tmp_path}_uncompressed.#{kind}", "w") {|f| f.write(source) }
 
-        # read it back in and trim it
+        puts "\n\n************ compressing #{kind} ******************"
+        puts `java -jar #{jsmin_path}/yuicompressor-2.4.2.jar #{tmp_path}_uncompressed.#{kind} -o #{tmp_path}_compressed.#{kind} #{"-v" if verbose}`
+
         result = ""
-        File.open("#{tmp_path}_compressed.js", "r") { |f| result += f.read.strip }
+        File.open("#{tmp_path}_compressed.#{kind}", "r") { |f| result += f.read.strip }
   
         # delete temp files if they exist
-        File.delete("#{tmp_path}_uncompressed.js") if File.exists?("#{tmp_path}_uncompressed.js")
-        File.delete("#{tmp_path}_compressed.js") if File.exists?("#{tmp_path}_compressed.js")
+        %w[ compressed uncompressed ].each do |x|
+          file = "#{tmp_path}_#{x}.#{kind}"
+          File.delete( file ) if File.exists?( file )
+        end
 
         result
       end
-  
-      def compress_css(source)
-        source.gsub!(/\s+/, " ")           # collapse space
-        source.gsub!(/\/\*(.*?)\*\//, "")  # remove comments - caution, might want to remove this if using css hacks
-        source.gsub!(/\} /, "}\n")         # add line breaks
-        source.gsub!(/\n$/, "")            # remove last break
-        source.gsub!(/ \{ /, " {")         # trim inside brackets
-        source.gsub!(/; \}/, "}")          # trim inside brackets
-        source
-      end
-
+      
       def get_extension
         case @asset_type
           when "javascripts" then "js"
