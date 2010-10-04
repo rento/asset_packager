@@ -6,18 +6,18 @@ module Synthesis
 
     @@compressor_jar_path = "#{RAILS_ROOT}/lib/yuicompressor/"
     @@compressor = "yuicompressor.jar"
-  
+
     # singleton methods
     class << self
       attr_accessor :asset_base_path,
                     :asset_packages_yml
 
-      attr_writer   :merge_environments
-      
+      attr_writer :merge_environments
+
       def merge_environments
         @merge_environments ||= ["production"]
       end
-      
+
       def parse_path(path)
         /^(?:(.*)\/)?([^\/]+)$/.match(path).to_a
       end
@@ -27,7 +27,7 @@ module Synthesis
       end
 
       def find_by_target(asset_type, target)
-        package_hash = asset_packages_yml[asset_type].find {|p| p.keys.first == target }
+        package_hash = asset_packages_yml[asset_type].find { |p| p.keys.first == target }
         package_hash ? self.new(asset_type, package_hash) : nil
       end
 
@@ -91,10 +91,10 @@ module Synthesis
       end
 
     end
-    
+
     # instance methods
     attr_accessor :asset_type, :target, :target_dir, :sources
-  
+
     def initialize(asset_type, package_hash)
       target_parts = self.class.parse_path(package_hash.keys.first)
       @target_dir = target_parts[1].to_s
@@ -106,7 +106,7 @@ module Synthesis
       @file_name = "#{@target}_packaged.#{@extension}"
       @full_path = File.join(@asset_path, @file_name)
     end
-  
+
     def package_exists?
       File.exists?(@full_path)
     end
@@ -127,78 +127,81 @@ module Synthesis
       File.delete(@full_path) if File.exists?(@full_path)
     end
 
+    #######
     private
+    #######
+
       def create_new_build
         new_build_path = "#{@asset_path}/#{@target}_packaged.#{@extension}"
         if File.exists?(new_build_path)
           log "Latest version already exists: #{new_build_path}"
         else
-          File.open(new_build_path, "w") {|f| f.write(compressed_file) }
+          File.open(new_build_path, "w") { |f| f.write(compressed_file) }
           log "Created #{new_build_path}"
         end
       end
 
       def merged_file
         merged_file = ""
-        @sources.each {|s| 
-          File.open("#{@asset_path}/#{s}.#{@extension}", "r") { |f| 
-            merged_file += f.read + "\n" 
+        @sources.each { |s|
+          File.open("#{@asset_path}/#{s}.#{@extension}", "r") { |f|
+            merged_file += f.read + "\n"
           }
         }
         merged_file
       end
-    
+
       def compressed_file
-        compress_file( merged_file, get_extension )
+        compress_file(merged_file, get_extension)
       end
 
-      def compress_file( source, kind, verbose=true )
+      def compress_file(source, kind, verbose=true)
         tmp_path   = "#{RAILS_ROOT}/tmp/#{@target}_packaged"
 
         options = ""
         # options += "--nomunge --preserve-semi --disable-optimizations" if kind == "js"
         options += " -v" if verbose
-      
+
         # write out to a temp file
-        File.open("#{tmp_path}_uncompressed.#{kind}", "w") {|f| f.write(source) }
+        File.open("#{tmp_path}_uncompressed.#{kind}", "w") { |f| f.write(source) }
 
         puts "\n\n************ compressing #{kind} ******************"
         puts `java -jar #{@@compressor_jar_path}/#{@@compressor} #{tmp_path}_uncompressed.#{kind} -o #{tmp_path}_compressed.#{kind} #{options}`
 
         result = ""
         File.open("#{tmp_path}_compressed.#{kind}", "r") { |f| result += f.read.strip }
-  
+
         # delete temp files if they exist
         %w[ compressed uncompressed ].each do |x|
           file = "#{tmp_path}_#{x}.#{kind}"
-          File.delete( file ) if File.exists?( file )
+          File.delete(file) if File.exists?(file)
         end
 
         result
       end
-      
+
       def get_extension
         case @asset_type
           when "javascripts" then "js"
           when "stylesheets" then "css"
         end
       end
-      
+
       def log(message)
         self.class.log(message)
       end
-      
+
       def self.log(message)
         puts message
       end
 
       def self.build_file_list(path, extension)
         re = Regexp.new(".#{extension}\\z")
-        file_list = Dir.new(path).entries.delete_if { |x| ! (x =~ re) }.map {|x| x.chomp(".#{extension}")}
+        file_list = Dir.new(path).entries.delete_if { |x| !(x =~ re) }.map { |x| x.chomp(".#{extension}") }
         # reverse javascript entries so prototype comes first on a base rails app
         file_list.reverse! if extension == "js"
         file_list
       end
-   
+
   end
 end
