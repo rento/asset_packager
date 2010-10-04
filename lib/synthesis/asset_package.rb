@@ -3,6 +3,9 @@ module Synthesis
 
     @asset_base_path    = "#{Rails.root}/public"
     @asset_packages_yml = File.exists?("#{Rails.root}/config/asset_packages.yml") ? YAML.load_file("#{Rails.root}/config/asset_packages.yml") : nil
+
+    @@compressor_jar_path = "#{RAILS_ROOT}/lib/yuicompressor/"
+    @@compressor = "yuicompressor.jar"
   
     # singleton methods
     class << self
@@ -150,7 +153,6 @@ module Synthesis
       end
 
       def compress_file( source, kind, verbose=true )
-        jsmin_path = "#{RAILS_ROOT}/vendor/plugins/asset_packager/lib"
         tmp_path   = "#{RAILS_ROOT}/tmp/#{@target}_packaged"
 
         options = ""
@@ -161,7 +163,7 @@ module Synthesis
         File.open("#{tmp_path}_uncompressed.#{kind}", "w") {|f| f.write(source) }
 
         puts "\n\n************ compressing #{kind} ******************"
-        puts `java -jar #{jsmin_path}/yuicompressor-2.4.2.jar #{tmp_path}_uncompressed.#{kind} -o #{tmp_path}_compressed.#{kind} #{options}`
+        puts `java -jar #{@@compressor_jar_path}/#{@@compressor} #{tmp_path}_uncompressed.#{kind} -o #{tmp_path}_compressed.#{kind} #{options}`
 
         result = ""
         File.open("#{tmp_path}_compressed.#{kind}", "r") { |f| result += f.read.strip }
