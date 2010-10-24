@@ -158,8 +158,8 @@ module Synthesis
       def compress_file(source, kind, verbose=false)
         tmp_path   = "#{RAILS_ROOT}/tmp/#{@target}_packaged"
 
-        options = ""
-        # options += "--nomunge --preserve-semi --disable-optimizations" if kind == "js"
+        options = "--charset UTF8"
+        # options += " --nomunge --preserve-semi --disable-optimizations" if kind == "js"
         options += " -v" if verbose
 
         # write out to a temp file
