@@ -165,8 +165,7 @@ module Synthesis
         # write out to a temp file
         File.open("#{tmp_path}_uncompressed.#{kind}", "w") { |f| f.write(source) }
 
-        puts "\n\n************ compressing #{kind} ******************"
-        puts `java -jar #{@@compressor_jar_path}/#{@@compressor} #{tmp_path}_uncompressed.#{kind} -o #{tmp_path}_compressed.#{kind} #{options}`
+        `java -jar #{@@compressor_jar_path}/#{@@compressor} #{tmp_path}_uncompressed.#{kind} -o #{tmp_path}_compressed.#{kind} #{options}`
 
         result = ""
         File.open("#{tmp_path}_compressed.#{kind}", "r") { |f| result += f.read.strip }
