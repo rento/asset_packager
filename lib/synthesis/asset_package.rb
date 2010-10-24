@@ -155,7 +155,7 @@ module Synthesis
         compress_file(merged_file, get_extension)
       end
 
-      def compress_file(source, kind, verbose=true)
+      def compress_file(source, kind, verbose=false)
         tmp_path   = "#{RAILS_ROOT}/tmp/#{@target}_packaged"
 
         options = ""
